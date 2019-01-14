@@ -2,10 +2,12 @@ package hlt;
 
 public class Ship extends Entity {
     public final int halite;
+    // public boolean returning;
 
     public Ship(final PlayerId owner, final EntityId id, final Position position, final int halite) {
         super(owner, id, position);
         this.halite = halite;
+        // this.returning = false;
     }
 
     public boolean isFull() {
