@@ -14,7 +14,17 @@ public class MyBot {
     // public Direction withoutCollision(Ship ship, Player me, GameMap gameMap){
 
     // }
-
+    
+    public static ArrayList<Position> neighbours(Position pos,GameMap gameMap){
+        ArrayList<Position> ans = new ArrayList<>();
+        for(int i=0;i<4;i++){
+            final Direction dir = Direction.ALL_CARDINALS.get(i);
+            Position newPosition = pos.directionalOffset(dir);
+            newPosition = gameMap.normalize(newPosition);
+            ans.add(newPosition);
+        }
+        return ans;
+    }
 
     public static void main(final String[] args) {
         final long rngSeed;
@@ -28,9 +38,14 @@ public class MyBot {
         int return_halite_limit=250;
 
         Game game = new Game();
+        GameMap tempMap = game.gameMap;
         // At this point "game" variable is populated with initial map data.
         // This is a good place to do computationally expensive start-up pre-processing.
         // As soon as you call "ready" function below, the 2 second per turn timer will start.
+        for(int i=0;i<tempMap.height;i++){
+
+        }
+        int number_of_dropoff = 0;
         game.ready("Aditya's 0.0");
 
         Log.log("Successfully created Aditya 0.0 bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
@@ -65,10 +80,22 @@ public class MyBot {
                 }
                 if(ships_exploring_status.get(ship.id)==false){
                     if(gameMap.at(me.shipyard).isOccupied() && gameMap.at(me.shipyard).ship.id.id == ship.id.id){
-                        Log.log("3");
                         ships_exploring_status.put(ship.id,true);
                     }else{
-                        Log.log("4");
+                        //adding condition for making it dropoff point
+                        if(me.dropoffs.size()<1){
+                            if(gameMap.calculateDistance(ship.position,me.shipyard.position)>=10){
+                                int sum=ship.halite;
+                                ArrayList<Position> nei = neighbours(ship.position,gameMap);
+                                for(int i=0;i<nei.size();i++){
+                                    sum+=gameMap.at(nei.get(i)).halite;
+                                }
+                                if(sum>1500&& (me.halite+ship.halite)>=Constants.DROPOFF_COST ){
+                                    commandQueue.add(ship.makeDropoff());
+                                    continue;
+                                }
+                            }
+                        }
                         Direction temp = gameMap.naiveNavigate(ship,me.shipyard.position);
                         Position newPosition = ship.position.directionalOffset(temp);
                         newPosition = gameMap.normalize(newPosition);
@@ -76,9 +103,7 @@ public class MyBot {
                             occupied_position.put(newPosition,true);
                             occupied_position.put(ship.position,false);
                             commandQueue.add(ship.move(temp));
-                            Log.log("5");
                         }else{
-                            Log.log("6");
                             commandQueue.add(ship.stayStill());
                         }
                         continue;
@@ -92,6 +117,25 @@ public class MyBot {
                 if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
                     Log.log("8");
                     commandQueue.add(ship.stayStill());
+                    continue;
+                }
+
+                if(gameMap.at(me.shipyard).isOccupied() && gameMap.at(me.shipyard).ship.id.id == ship.id.id){
+                    boolean forThisIf = true;
+                    for(int i=0;i<4 && forThisIf;i++){
+                        final Direction dir = Direction.ALL_CARDINALS.get(i);
+                        Position newPosition = ship.position.directionalOffset(dir);
+                        newPosition = gameMap.normalize(newPosition);
+                        if(occupied_position.get(newPosition)==null||occupied_position.get(newPosition)==false){
+                            occupied_position.put(newPosition,true);
+                            occupied_position.put(ship.position,false);
+                            commandQueue.add(ship.move(dir));
+                            forThisIf = false;
+                        }
+                    }
+                    if(forThisIf){
+                        commandQueue.add(ship.stayStill());
+                    }
                     continue;
                 }
 
@@ -140,7 +184,7 @@ public class MyBot {
                     // }
                 }
             }else{
-                if(number_of_ships<13){
+                if(number_of_ships<15&&game.turnNumber<450){
                     if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
                             commandQueue.add(me.shipyard.spawn());
                     }
