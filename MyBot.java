@@ -92,6 +92,24 @@ public class MyBot {
         int ships_limit=8;
         int depth_search = 1;
         int number_blocking_ships =0;
+        int distance_between_drops = 15;
+        switch (game.gameMap.height) {
+            case 32:
+                distance_between_drops = 10;
+                break;
+            case 40:
+                distance_between_drops = 11;
+                break;
+            case 48:
+                distance_between_drops = 12;
+                break;
+            case 56:
+                distance_between_drops = 13;
+                break;
+            default:
+                distance_between_drops = 15;
+                break;
+        }
         game.ready("Aditya's 0.0");
 
         Log.log("Successfully created Aditya 0.0 bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
@@ -109,7 +127,7 @@ public class MyBot {
             final ArrayList<Command> commandQueue = new ArrayList<>();
 
             final Map<Position,Boolean> occupied_position = new LinkedHashMap<>();
-            ships_limit = 12 + (2*me.dropoffs.size());
+            ships_limit = 10 + (4*me.dropoffs.size());
 
             for (final Ship ship : me.ships.values()){
                 occupied_position.put(ship.position,true);
@@ -173,11 +191,11 @@ public class MyBot {
                         if(game.turnNumber<=400 && me.dropoffs.size()<4){
                             boolean farEnoughPoint = true;
                             for(Dropoff drop : me.dropoffs.values()){
-                                if(gameMap.calculateDistance(ship.position,drop.position)<15){
+                                if(gameMap.calculateDistance(ship.position,drop.position)<distance_between_drops){
                                     farEnoughPoint = false;
                                 }
                             }
-                            if(gameMap.calculateDistance(ship.position,me.shipyard.position)<15){
+                            if(gameMap.calculateDistance(ship.position,me.shipyard.position)<distance_between_drops){
                                 farEnoughPoint = false;
                             }
                             if(farEnoughPoint){
@@ -195,11 +213,21 @@ public class MyBot {
                         //Dropoff condition above
                         //now selecting the nearest dropoff
                         Position finalDrop = me.shipyard.position;
+                        if(me.dropoffs.size()!=0){
+                            if(me.dropoffs.get(0)==null){
+
+                            }else{
+                                finalDrop = me.dropoffs.get(0).position;
+                            }
+                        }
                         for(Dropoff drop : me.dropoffs.values()){
                             if(gameMap.calculateDistance(ship.position,drop.position)<gameMap.calculateDistance(ship.position,finalDrop)){
                                 finalDrop = drop.position;
                             }
                         }
+                        // if(gameMap.calculateDistance(ship.position,finalDrop)-gameMap.calculateDistance(ship.position,me.shipyard.position) > 25){
+                        //     finalDrop = me.shipyard.position;
+                        // }
                         Direction temp = gameMap.naiveNavigate(ship,finalDrop);
                         Position newPosition = ship.position.directionalOffset(temp);
                         newPosition = gameMap.normalize(newPosition);
@@ -276,16 +304,16 @@ public class MyBot {
             }
 
             if(game.turnNumber == 100){
-                return_halite_limit = 500;
+                return_halite_limit = 300;
             }
             if(game.turnNumber == 200){
-                return_halite_limit = 900;
-            }
-            if(game.turnNumber == 300){
                 return_halite_limit = 800;
             }
-            if(game.turnNumber == 400){
+            if(game.turnNumber == 300){
                 return_halite_limit = 700;
+            }
+            if(game.turnNumber == 400){
+                return_halite_limit = 300;
             }
 
 
