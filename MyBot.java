@@ -25,6 +25,8 @@ public class MyBot {
         }
         final Random rng = new Random(rngSeed);
 
+        int return_halite_limit=250;
+
         Game game = new Game();
         // At this point "game" variable is populated with initial map data.
         // This is a good place to do computationally expensive start-up pre-processing.
@@ -53,17 +55,10 @@ public class MyBot {
             
 
             for (final Ship ship : me.ships.values()) {
+                //For each ship do the following
+                //---------------------------------------------------------------------------------------------------------------------------------
+
                 Log.log(Integer.toString(ship.halite)+ " ship's halite");
-                // if(gameMap.at(me.shipyard).isOccupied()){
-                //     Log.log("shipyard2");
-                //     int a = gameMap.at(me.shipyard).ship.id.id;
-                //     Log.log(Integer.toString(a));
-                //     Log.log(Integer.toString(ship.id.id));
-                //     if(gameMap.at(me.shipyard).ship.id.id == ship.id.id){
-                //         Log.log("shipyard");
-                //     }
-                // }
-                //Below contains the returning code for ships
                 if(ships_exploring_status.get(ship.id)==null){
                     Log.log("2");
                     ships_exploring_status.put(ship.id,true);
@@ -88,27 +83,11 @@ public class MyBot {
                         }
                         continue;
                     }
-                }else if(ships_exploring_status.get(ship.id)==true && ship.halite >= 600){//Constants.MAX_HALITE
+                }else if(ships_exploring_status.get(ship.id)==true && ship.halite >= return_halite_limit){//Constants.MAX_HALITE
                     Log.log("7");
                     ships_exploring_status.put(ship.id,false);
                 }
                 //Above contains the returning code
-
-                //below if ship is stuck at shipyard
-                // if(ship.position == me.shipyard.position){
-                //     final Direction randomDirection = Direction.ALL_CARDINALS.get(rng.nextInt(4));
-                //     Position newPosition = ship.position.directionalOffset(randomDirection);
-                //     newPosition = gameMap.normalize(newPosition);
-                //     if(occupied_position.get(newPosition)==null||occupied_position.get(newPosition)==false){
-                //         occupied_position.put(newPosition,true);
-                //         occupied_position.put(ship.position,false);
-                //         commandQueue.add(ship.move(randomDirection));
-                //     }else{
-                //         //else move to the position and swap occupied positions
-                //         commandQueue.add(ship.stayStill());
-                //     }
-                //     continue;
-                // }
                 //sufficient halite to move forward
                 if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
                     Log.log("8");
@@ -132,9 +111,9 @@ public class MyBot {
                             toMove = i;
                         }
                     }
-                    Log.log("max halite : "+ Integer.toString(max));
+                    
                     final Direction dirToMove = Direction.ALL_CARDINALS.get(toMove);
-                    // final Direction randomDirection = Direction.ALL_CARDINALS.get(rng.nextInt(4));
+                    
                     Position newPosition = ship.position.directionalOffset(dirToMove);
                     newPosition = gameMap.normalize(newPosition);
                     if(occupied_position.get(newPosition)==null||occupied_position.get(newPosition)==false){
@@ -150,16 +129,35 @@ public class MyBot {
                 } else {
                     commandQueue.add(ship.stayStill());
                 }
-            
+                //End of one loop for each ship ---------------------------------------------------------------------------------------------------------
             }
 
             //below code spawns a new ship if we have sufficient halite and shipyard is not occupied
-            if(game.turnNumber <=300 ){
+            if(game.turnNumber <=100 ){
                 if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
-                    if(me.halite>=4000 && number_of_ships<3){
+                    // if(me.halite>=4000 && number_of_ships<15){
                         commandQueue.add(me.shipyard.spawn());
+                    // }
+                }
+            }else{
+                if(number_of_ships<13){
+                    if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
+                            commandQueue.add(me.shipyard.spawn());
                     }
                 }
+            }
+
+            if(game.turnNumber == 100){
+                return_halite_limit = 500;
+            }
+            if(game.turnNumber == 200){
+                return_halite_limit = 600;
+            }
+            if(game.turnNumber == 300){
+                return_halite_limit = 700;
+            }
+            if(game.turnNumber == 400){
+                return_halite_limit = 800;
             }
 
 
