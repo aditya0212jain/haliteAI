@@ -11,6 +11,10 @@ import java.util.Map;
 
 public class MyBot {
 
+    // public Direction withoutCollision(Ship ship, Player me, GameMap gameMap){
+
+    // }
+
 
     public static void main(final String[] args) {
         final long rngSeed;
@@ -38,6 +42,12 @@ public class MyBot {
 
             final ArrayList<Command> commandQueue = new ArrayList<>();
 
+            final Map<Position,Boolean> occupied_position = new LinkedHashMap<>();
+
+            for (final Ship ship : me.ships.values()){
+                occupied_position.put(ship.position,true);
+            }
+
             for (final Ship ship : me.ships.values()) {
 
                 //Below contains the returning code for ships
@@ -51,17 +61,30 @@ public class MyBot {
                         commandQueue.add(ship.move(gameMap.naiveNavigate(ship, me.shipyard.position)));
                         continue;
                     }
-                }else if(ships_exploring_status.get(ship)==true && ship.halite >= Constants.MAX_HALITE/2){
+                }else if(ships_exploring_status.get(ship)==true && ship.halite >= Constants.MAX_HALITE/3){
                     ships_exploring_status.put(ship,false);
                 }
                 //Above contains the returning code
 
                 if (gameMap.at(ship).halite < Constants.MAX_HALITE / 10 || ship.isFull()) {
                     final Direction randomDirection = Direction.ALL_CARDINALS.get(rng.nextInt(4));
-                    commandQueue.add(ship.move(randomDirection));
+                    
+                    //if the position where ship was about to move is occupied then stay still
+                    Position newPosition = ship.position.directionalOffset(randomDirection);
+                    newPosition = gameMap.normalize(newPosition);
+                    if(occupied_position.get(newPosition)==null||occupied_position.get(newPosition)==false){
+                        occupied_position.put(newPosition,true);
+                        occupied_position.put(ship.position,false);
+                        commandQueue.add(ship.move(randomDirection));
+                    }else{
+                        //else move to the position and swap occupied positions
+                        commandQueue.add(ship.stayStill());
+                    }
+                    // commandQueue.add(ship.move(randomDirection));
                 } else {
                     commandQueue.add(ship.stayStill());
                 }
+            
             }
 
             //below code spawns a new ship if we have sufficient halite and shipyard is not occupied
@@ -72,6 +95,15 @@ public class MyBot {
             // {
             //     commandQueue.add(me.shipyard.spawn());
             // }
+            if(me.ships.size()<2){
+                if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
+                    if(me.halite >=5000){
+                        commandQueue.add(me.shipyard.spawn());
+                        occupied_position.put(me.shipyard.position,true);
+                    }
+                }
+            }
+
 
             game.endTurn(commandQueue);
         }
