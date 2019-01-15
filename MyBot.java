@@ -89,7 +89,8 @@ public class MyBot {
 
         }
         int number_of_dropoff = 0;
-        int ships_limit=8;
+        int ships_limit_initial=7;
+        int ships_limit = 8;
         int depth_search = 1;
         int number_blocking_ships =0;
         int distance_between_drops = 15;
@@ -110,12 +111,14 @@ public class MyBot {
                 distance_between_drops = 15;
                 break;
         }
+        distance_between_drops = 25;
         game.ready("Aditya's 0.0");
 
         Log.log("Successfully created Aditya 0.0 bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
 
         final Map<EntityId,Boolean> ships_exploring_status = new LinkedHashMap<>();
-        final Map<Integer,Boolean> block_others_ship = new LinkedHashMap<>();
+        final Map<Integer,Integer> block_others_ship = new LinkedHashMap<>();
+        final Map<Integer,Boolean> player_blocked = new LinkedHashMap<>();
 
         for (;;) {
             game.updateFrame();
@@ -127,7 +130,7 @@ public class MyBot {
             final ArrayList<Command> commandQueue = new ArrayList<>();
 
             final Map<Position,Boolean> occupied_position = new LinkedHashMap<>();
-            ships_limit = 10 + (4*me.dropoffs.size());
+            ships_limit = ships_limit_initial + (2*me.dropoffs.size());
 
             for (final Ship ship : me.ships.values()){
                 occupied_position.put(ship.position,true);
@@ -137,21 +140,29 @@ public class MyBot {
             for (final Ship ship : me.ships.values()) {
                 //For each ship do the following
                 //---------------------------------------------------------------------------------------------------------------------------------
-                if(number_blocking_ships<1){
-                    block_others_ship.put(ship.id.id,true);
-                    number_blocking_ships += 1;
+                //adding ships for blocking
+                if(number_blocking_ships<game.players.size()-1){
+                    if(block_others_ship.get(ship.id.id)==null||block_others_ship.get(ship.id.id)==-1){
+                        int playerToBlock=0;
+                        boolean temp1 = true;
+                        for(int i=0;i<game.players.size() && temp1;i++){
+                            if(me.id.id!=game.players.get(i).id.id){
+                                if(player_blocked.get(i)==null||player_blocked.get(i)==false){
+                                    player_blocked.put(i,true);
+                                    block_others_ship.put(ship.id.id,i);
+                                    number_blocking_ships += 1;
+                                    temp1 = false;
+                                }
+                            }
+                        }
+                        // block_others_ship.put(ship.id.id,true);
+                        
+                    }
                 }
-                if(block_others_ship.get(ship.id.id)==null||block_others_ship.get(ship.id.id)==false){
+                if(block_others_ship.get(ship.id.id)==null||block_others_ship.get(ship.id.id)==-1){
 
                 }else{
-                    int playerToBlock=0;
-                    boolean temp1 = true;
-                    for(int i=0;i<game.players.size() && temp1;i++){
-                        if(me.id.id!=game.players.get(i).id.id){
-                            playerToBlock = i;
-                            temp1 = false;
-                        }
-                    }
+                    int playerToBlock = block_others_ship.get(ship.id.id);
                     Position finalDrop = game.players.get(playerToBlock).shipyard.position;
                     Direction temp = gameMap.naiveNavigate(ship,finalDrop);
                     Position newPosition = ship.position.directionalOffset(temp);
@@ -169,13 +180,15 @@ public class MyBot {
                     }
                     continue;
                 }
-
-                // Log.log(Integer.toString(ship.halite)+ " ship's halite");
+                //end of blocking strategy
+                
+                //if ship is new
                 if(ships_exploring_status.get(ship.id)==null){
                     ships_exploring_status.put(ship.id,true);
                 }
+                //if ship is returning
                 if(ships_exploring_status.get(ship.id)==false){
-                    //if ships is returning------------------------------------
+                    //if ships is returning and just emptied
                     if(ship.halite==0){
                         if(gameMap.at(me.shipyard).isOccupied() && gameMap.at(me.shipyard).ship.id.id == ship.id.id){
                             ships_exploring_status.put(ship.id,true);
@@ -188,7 +201,7 @@ public class MyBot {
                     }
                     else{
                         //adding condition for making it dropoff point
-                        if(game.turnNumber<=400 && me.dropoffs.size()<4){
+                        if(game.turnNumber<=400 && me.dropoffs.size()<3){
                             boolean farEnoughPoint = true;
                             for(Dropoff drop : me.dropoffs.values()){
                                 if(gameMap.calculateDistance(ship.position,drop.position)<distance_between_drops){
@@ -221,14 +234,21 @@ public class MyBot {
                             }
                         }
                         for(Dropoff drop : me.dropoffs.values()){
-                            if(gameMap.calculateDistance(ship.position,drop.position)<gameMap.calculateDistance(ship.position,finalDrop)){
+                            if(gameMap.calculateDistance(ship.position,drop.position)<=gameMap.calculateDistance(ship.position,finalDrop)){
                                 finalDrop = drop.position;
                             }
                         }
+                        
+
+                        //uncommet below if you want to take shipyard into consideration too
                         // if(gameMap.calculateDistance(ship.position,finalDrop)-gameMap.calculateDistance(ship.position,me.shipyard.position) > 25){
                         //     finalDrop = me.shipyard.position;
                         // }
                         Direction temp = gameMap.naiveNavigate(ship,finalDrop);
+                        int dis_for_drop = gameMap.calculateDistance(ship.position,finalDrop);
+                        if(dis_for_drop==1){
+                            temp = gameMap.getUnsafeMoves(ship.position,finalDrop).get(0);
+                        }
                         Position newPosition = ship.position.directionalOffset(temp);
                         newPosition = gameMap.normalize(newPosition);
                         if(occupied_position.get(newPosition)==null||occupied_position.get(newPosition)==false){
@@ -241,6 +261,7 @@ public class MyBot {
                         continue;
                     }
                 }else if(ships_exploring_status.get(ship.id)==true && ship.halite >= return_halite_limit){//Constants.MAX_HALITE
+                    //if has sufficient halite then return 
                     ships_exploring_status.put(ship.id,false);
                 }
                 //Above contains the returning code
