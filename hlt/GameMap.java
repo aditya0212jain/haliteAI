@@ -68,6 +68,10 @@ public class GameMap {
             possibleMoves.add(dy < wrapped_dy ? Direction.NORTH : Direction.SOUTH);
         }
 
+        if(possibleMoves.size()==0){
+            possibleMoves.add(Direction.STILL);
+        }
+
         return possibleMoves;
     }
 
