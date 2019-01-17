@@ -125,9 +125,9 @@ public class best {
                 alloted_turns = 501;
                 break;
         }
-        game.ready("best 0.0");
+        game.ready("best's 0.0");
 
-        Log.log("Successfully created best 0.0 bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
+        Log.log("Successfully created Aditya 0.0 bot! My Player ID is " + game.myId + ". Bot rng seed is " + rngSeed + ".");
 
         final Map<EntityId,Boolean> ships_exploring_status = new LinkedHashMap<>();
         final Map<Integer,Integer> block_others_ship = new LinkedHashMap<>();
@@ -172,7 +172,7 @@ public class best {
                 //For each ship do the following
                 //---------------------------------------------------------------------------------------------------------------------------------
                 //adding ships for blocking
-                if(number_blocking_ships<game.players.size()-1&&number_blocking_ships<2){
+                if(number_blocking_ships<game.players.size()-1&& game.players.size()<2){
                     if(block_others_ship.get(ship.id.id)==null||block_others_ship.get(ship.id.id)==-1){
                         int playerToBlock=0;
                         boolean temp1 = true;
@@ -193,7 +193,7 @@ public class best {
                 }else{
                     int playerToBlock = block_others_ship.get(ship.id.id);
                     Position finalDrop = game.players.get(playerToBlock).shipyard.position;
-                    Direction temp = gameMap.naiveNavigate(ship,finalDrop);
+                    Direction temp = gameMap.naiveNavigate(ship,finalDrop);//
                     Position newPosition = ship.position.directionalOffset(temp);
                     newPosition = gameMap.normalize(newPosition);
                     if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
@@ -358,12 +358,17 @@ public class best {
                 if(ships_exploring_status.get(ship.id)==null){
                     ships_exploring_status.put(ship.id,true);
                     if(me.ships.size()<5){
-                        ship_depth_search.put(ship.id.id,13);
-                        ship_return_limit.put(ship.id.id,300);
+                        ship_depth_search.put(ship.id.id,4);
+                        if(gameMap.height>40){
+                            
+                            ship_return_limit.put(ship.id.id,700);
+                        }else{
+                            ship_return_limit.put(ship.id.id,700);
+                        }
                     }
                     if(me.ships.size()>=5&&me.ships.size()<10){
                         ship_depth_search.put(ship.id.id,14);
-                        ship_return_limit.put(ship.id.id,600);
+                        ship_return_limit.put(ship.id.id,700);
                     }
                     if(me.ships.size()>=10){
                         ship_depth_search.put(ship.id.id,15);
@@ -371,11 +376,11 @@ public class best {
                     }
                 }
 
-                if(game.turnNumber>300){
-                    if(ship_depth_search.get(ship.id.id)==12){
-                        ship_return_limit.put(ship.id.id,750);
-                    }
-                }
+                // if(game.turnNumber>300){
+                //     if(ship_depth_search.get(ship.id.id)==13){
+                //         ship_return_limit.put(ship.id.id,750);
+                //     }
+                // }
                 //if ship is returning
                 ///
                 ///RETUrning code
@@ -416,7 +421,7 @@ public class best {
                         // }
 
                         //adding condition for making it dropoff point
-                        if(game.turnNumber<=300){
+                        if(game.turnNumber<=300 && gameMap.height>40){
                             boolean farEnoughPoint = true;
                             for(Dropoff drop : me.dropoffs.values()){
                                 if(gameMap.calculateDistance(ship.position,drop.position)<distance_between_drops){
@@ -434,10 +439,12 @@ public class best {
                                 }
                                 if(gameMap.at(ship.position).halite>=790&&(me.halite)>=5000){
                                     commandQueue.add(ship.makeDropoff());
+                                    me.halite -= 4000;
                                     continue;
                                 }
                                 if(sum>2000&& (me.halite)>=4000 ){
                                     commandQueue.add(ship.makeDropoff());
+                                    me.halite -= 4000;
                                     continue;
                                 }
                             }
@@ -462,7 +469,7 @@ public class best {
                         // if(gameMap.calculateDistance(ship.position,finalDrop)-gameMap.calculateDistance(ship.position,me.shipyard.position) > 25){
                         //     finalDrop = me.shipyard.position;
                         // }
-                        Direction temp = gameMap.naiveNavigate(ship,finalDrop);
+                        Direction temp = gameMap.naiveNavigate(ship,finalDrop);//naiveNavigate(ship,finalDrop)
                         int dis_for_drop = gameMap.calculateDistance(ship.position,finalDrop);
                         if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
                             commandQueue.add(ship.stayStill());
@@ -621,8 +628,15 @@ public class best {
                     }
                 }
             }
-            if(game.turnNumber==200){
-                ships_limit_initial = me.ships.size();
+            
+            if(game.turnNumber>200&&game.turnNumber<=250 && gameMap.height>40){
+                if(me.ships.size()>11){
+                    if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
+                        if(occupied_position.get(me.shipyard.position)==null||occupied_position.get(me.shipyard.position)==false){
+                            commandQueue.add(me.shipyard.spawn());
+                        }
+                    }
+                }
             }
             // if(game.turnNumber>200){
             //     if(deploy){
@@ -639,18 +653,7 @@ public class best {
             // }
             
 
-            if(game.turnNumber == 100){
-                return_halite_limit = 500;
-            }
-            if(game.turnNumber == 200){
-                return_halite_limit = 900;
-            }
-            if(game.turnNumber == 300){
-                return_halite_limit = 900;
-            }
-            if(game.turnNumber == 400){
-                return_halite_limit = 900;
-            }
+            
 
 
             game.endTurn(commandQueue);

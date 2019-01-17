@@ -193,7 +193,7 @@ public class MyBot {
                 }else{
                     int playerToBlock = block_others_ship.get(ship.id.id);
                     Position finalDrop = game.players.get(playerToBlock).shipyard.position;
-                    Direction temp = gameMap.naiveNavigate(ship,finalDrop);//
+                    Direction temp = gameMap.getUnsafeMoves(ship.position,finalDrop).get(0);//
                     Position newPosition = ship.position.directionalOffset(temp);
                     newPosition = gameMap.normalize(newPosition);
                     if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
@@ -357,6 +357,7 @@ public class MyBot {
 
                 if(ships_exploring_status.get(ship.id)==null){
                     ships_exploring_status.put(ship.id,true);
+                    
                     if(me.ships.size()<5){
                         ship_depth_search.put(ship.id.id,4);
                         if(gameMap.height>40){
@@ -367,11 +368,11 @@ public class MyBot {
                         }
                     }
                     if(me.ships.size()>=5&&me.ships.size()<10){
-                        ship_depth_search.put(ship.id.id,14);
+                        ship_depth_search.put(ship.id.id,12);
                         ship_return_limit.put(ship.id.id,700);
                     }
                     if(me.ships.size()>=10){
-                        ship_depth_search.put(ship.id.id,15);
+                        ship_depth_search.put(ship.id.id,12);
                         ship_return_limit.put(ship.id.id,900);
                     }
                 }
@@ -439,10 +440,12 @@ public class MyBot {
                                 }
                                 if(gameMap.at(ship.position).halite>=790&&(me.halite)>=5000){
                                     commandQueue.add(ship.makeDropoff());
+                                    me.halite -= 4000;
                                     continue;
                                 }
                                 if(sum>2000&& (me.halite)>=4000 ){
                                     commandQueue.add(ship.makeDropoff());
+                                    me.halite -= 4000;
                                     continue;
                                 }
                             }
@@ -467,7 +470,7 @@ public class MyBot {
                         // if(gameMap.calculateDistance(ship.position,finalDrop)-gameMap.calculateDistance(ship.position,me.shipyard.position) > 25){
                         //     finalDrop = me.shipyard.position;
                         // }
-                        Direction temp = gameMap.naiveNavigate(ship,finalDrop);//naiveNavigate(ship,finalDrop)
+                        Direction temp = gameMap.getUnsafeMoves(ship.position,finalDrop).get(0);//naiveNavigate(ship,finalDrop)
                         int dis_for_drop = gameMap.calculateDistance(ship.position,finalDrop);
                         if(ship.halite < gameMap.at(ship).halite/10 && gameMap.at(ship).halite!=0){
                             commandQueue.add(ship.stayStill());
@@ -475,7 +478,7 @@ public class MyBot {
                         }
                         if(dis_for_drop==1){
                             temp = gameMap.getUnsafeMoves(ship.position,finalDrop).get(0);
-                            if(game.turnNumber<=30){
+                            if(alloted_turns - game.turnNumber<=30){
                                 commandQueue.add(ship.move(temp));
                                 continue;
                             }
@@ -565,7 +568,14 @@ public class MyBot {
                     continue;
                 }
 
-                int moving_limit = 50;
+
+
+                //////
+                /////
+                ////
+                ///Exploring below
+
+                int moving_limit = 50;//30 is okay
 
                 if(ship_return_limit.get(ship.id.id)>=890){
                     moving_limit = 100;
@@ -576,11 +586,11 @@ public class MyBot {
 
                     double ran = Math.random();
                     Direction t23;
-                    if(ran<0.1){
-                        t23 = Direction.ALL_CARDINALS.get(rng.nextInt(4));
-                    }else{
+                    // if(ran<0.1){
+                    //     t23 = Direction.ALL_CARDINALS.get(rng.nextInt(4));
+                    // }else{
                         t23 = optimalMove(ship_depth_search.get(ship.id.id),ship.position,ship,gameMap);
-                    }
+                    // }
                     
                     final Direction dirToMove = t23;
                     
@@ -593,7 +603,7 @@ public class MyBot {
                     }else{
                         //if optimal move is blocked then
                         boolean forThisIf = true;
-                        for(int i=0;i<4 && forThisIf;i++){
+                        for(int i=0;i<10 && forThisIf;i++){
                             final Direction dir = Direction.ALL_CARDINALS.get(rng.nextInt(4));
                             newPosition = ship.position.directionalOffset(dir);
                             newPosition = gameMap.normalize(newPosition);
@@ -619,7 +629,12 @@ public class MyBot {
             }
 
             //below code spawns a new ship if we have sufficient halite and shipyard is not occupied
-            if(game.turnNumber <=200 ){//me.ships.size()<ships_limit && 
+            int ship_spawn_time_limit = 200;
+            if(gameMap.height==32){
+                ship_spawn_time_limit = 150;
+            }
+
+            if(game.turnNumber <=ship_spawn_time_limit ){//me.ships.size()<ships_limit && 
                 if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
                     if(occupied_position.get(me.shipyard.position)==null||occupied_position.get(me.shipyard.position)==false){
                         commandQueue.add(me.shipyard.spawn());
@@ -636,19 +651,6 @@ public class MyBot {
                     }
                 }
             }
-            // if(game.turnNumber>200){
-            //     if(deploy){
-            //         deploy = false;
-            //         ships_limit_initial += 3;
-            //     }
-            //     if(me.ships.size()<ships_limit_initial){//me.ships.size()<ships_limit && 
-            //         if(me.halite>=Constants.SHIP_COST && !gameMap.at(me.shipyard).isOccupied()){
-            //             if(occupied_position.get(me.shipyard.position)==null||occupied_position.get(me.shipyard.position)==false){
-            //                 commandQueue.add(me.shipyard.spawn());
-            //             }
-            //         }
-            //     }
-            // }
             
 
             
